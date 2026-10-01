@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#071c1b">
+  <title>Cororo — живая песочница</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main>
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">●</span><div><b>CORORO</b><small>ЖИВАЯ ПЕСОЧНИЦА · ПРОТОТИП 0.1</small></div></div>
+      <div class="stage"><span id="stage-number">01</span><div><small>СТАДИЯ</small><b id="stage-name">ЗАРОЖДЕНИЕ</b></div></div>
+      <button id="pause" class="icon-button" aria-label="Пауза">Ⅱ</button>
+    </header>
+
+    <section class="layout">
+      <aside class="panel left-panel">
+        <p class="eyebrow">ГЕНОМ ВИДА</p>
+        <div class="creature-card"><canvas id="portrait" width="240" height="150"></canvas><b id="species-name">CORO PRIMA</b><span>Поколение <i id="generation">1</i></span></div>
+        <div class="meter"><div><span>ЭНЕРГИЯ</span><b id="energy-label">72 / 100</b></div><progress id="energy" max="100" value="72"></progress></div>
+        <div class="meter"><div><span>ЭВОЛЮЦИЯ</span><b id="dna-label">0 / 4</b></div><progress id="dna" max="4" value="0"></progress></div>
+
+        <p class="eyebrow">РЕДАКТОР СУЩЕСТВА</p>
+        <label class="trait"><span><b>СКОРОСТЬ</b><i id="speed-value">3</i></span><input id="speed" type="range" min="1" max="5" value="3"><small>Быстрее движение, выше расход</small></label>
+        <label class="trait"><span><b>ЧУТЬЁ</b><i id="sense-value">3</i></span><input id="sense" type="range" min="1" max="5" value="3"><small>Дальше видны пища и опасность</small></label>
+        <label class="trait"><span><b>ПАНЦИРЬ</b><i id="armor-value">2</i></span><input id="armor" type="range" min="1" max="5" value="2"><small>Защита ценой подвижности</small></label>
+        <div class="color-editor">
+          <label><span>ЦВЕТ КЛЕТКИ</span><input id="creature-color" type="color" value="#c9ed62"></label>
+          <label><span>ЦВЕТ ИНТЕРФЕЙСА</span><input id="ui-color" type="color" value="#c9ed62"></label>
+        </div>
+        <p class="editor-help">Форма клетки меняется вместе с параметрами. Цвет интерфейса применяется сразу.</p>
+        <button id="mutate" class="primary">ПРИМЕНИТЬ МУТАЦИЮ <span>−25 ⚡</span></button>
+        <button id="share" class="secondary">КОПИРОВАТЬ ГЕНОМ</button>
+      </aside>
+
+      <section class="world-wrap">
+        <canvas id="world" width="960" height="640" aria-label="Процедурный мир"></canvas>
+        <div class="world-head"><span><i></i> БИОМ: <b id="biome">ИЗУМРУДНЫЕ ОТМЕЛИ</b></span><span>SEED <b id="seed-label"></b></span></div>
+        <div class="hint"><b>WASD</b> движение · <b>SPACE</b> рывок · <b>КЛИК</b> цель</div>
+        <div id="toast" class="toast">Мир пробуждается…</div>
+      </section>
+
+      <aside class="panel right-panel">
+        <p class="eyebrow">НАБЛЮДЕНИЕ</p>
+        <div class="stats"><div><b id="population">1</b><span>ПОПУЛЯЦИЯ</span></div><div><b id="food-count">0</b><span>ПИЩА</span></div><div><b id="age">0:00</b><span>ВОЗРАСТ</span></div><div><b id="fitness">—</b><span>ПРИГОДНОСТЬ</span></div></div>
+        <p class="eyebrow">ЦЕЛЬ ПОКОЛЕНИЯ</p>
+        <div class="goal"><div class="goal-icon">✦</div><div><b id="goal-title">СОЗДАЙТЕ ПОТОМСТВО</b><p id="goal-description">Соберите энергию и вырастите популяцию.</p><span id="goal-state">1 / 2 существа</span></div></div>
+        <p class="eyebrow">ЛЕТОПИСЬ</p>
+        <ol id="log" class="log"></ol>
+        <div class="seed-control"><label for="seed">НОВЫЙ МИР</label><div><input id="seed" value="CORORO-42" maxlength="24"><button id="new-world">↻</button></div></div>
+      </aside>
+    </section>
+  </main>
+  <script type="module" src="src/app.mjs"></script>
+</body>
+</html>

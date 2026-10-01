@@ -4,13 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#071c1b">
-  <title>Cororo — живая песочница</title>
+  <title>Cororo 3D — живая песочница</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <main>
     <header class="topbar">
-      <div class="brand"><span class="brand-mark">●</span><div><b>CORORO</b><small>ЖИВАЯ ПЕСОЧНИЦА · ПРОТОТИП 0.1</small></div></div>
+      <div class="brand"><span class="brand-mark">●</span><div><b>CORORO</b><small>ЖИВАЯ ПЕСОЧНИЦА · 3D ПРОТОТИП 0.2</small></div></div>
       <div class="stage"><span id="stage-number">01</span><div><small>СТАДИЯ</small><b id="stage-name">ЗАРОЖДЕНИЕ</b></div></div>
       <button id="pause" class="icon-button" aria-label="Пауза">Ⅱ</button>
     </header>
@@ -36,9 +36,9 @@
       </aside>
 
       <section class="world-wrap">
-        <canvas id="world" width="960" height="640" aria-label="Процедурный мир"></canvas>
+        <canvas id="world" width="960" height="640" aria-label="Процедурный трёхмерный мир"></canvas>
         <div class="world-head"><span><i></i> БИОМ: <b id="biome">ИЗУМРУДНЫЕ ОТМЕЛИ</b></span><span>SEED <b id="seed-label"></b></span></div>
-        <div class="hint"><b>WASD</b> движение · <b>SPACE</b> рывок · <b>КЛИК</b> цель</div>
+        <div class="hint"><b>WASD</b> движение · <b>SPACE</b> рывок · <b>КЛИК</b> цель · камера следует за клеткой</div>
         <div id="toast" class="toast">Мир пробуждается…</div>
       </section>
 

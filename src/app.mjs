@@ -1,8 +1,9 @@
 import { applyGenome, createWorld, decodeGenome, encodeGenome, hashSeed, step } from './simulation.mjs';
+import { Renderer3D } from './renderer3d.mjs';
 
 const $ = id => document.getElementById(id);
 const canvas = $('world');
-const ctx = canvas.getContext('2d');
+const renderer = new Renderer3D(canvas);
 const portrait = $('portrait').getContext('2d');
 const input = { x: 0, y: 0, target: null, boost: false };
 const stages = [
@@ -46,7 +47,8 @@ function applyInterfaceColor(color, save = true) {
 }
 
 function reset(seed) {
-  world = createWorld(seed, canvas.width, canvas.height);
+  // Simulation coordinates stay independent from screen resolution and devicePixelRatio.
+  world = createWorld(seed, 960, 640);
   input.target = null;
   lastEvent = 0;
   goalIndex = 0;
@@ -61,121 +63,53 @@ function reset(seed) {
   toast('Новая жизнь начинается');
 }
 
-function drawCreature(creature, genome, context = ctx, scale = 1) {
-  const bodyColor = genome.bodyColor || '#c9ed62';
-  const bodyLength = 7 + genome.speed * 1.2;
-  const bodyHeight = 5 + genome.armor * .7;
-  context.save();
-  context.translate(creature.x, creature.y);
-  context.rotate(creature.angle || 0);
-  context.shadowColor = bodyColor;
-  context.shadowBlur = 12 * scale;
-
-  // Speed grows a longer forked tail.
-  context.strokeStyle = bodyColor;
-  context.lineWidth = (1.2 + genome.speed * .25) * scale;
-  for (const side of [-1, 1]) {
-    context.beginPath();
-    context.moveTo(-bodyLength * scale, side * 2 * scale);
-    context.quadraticCurveTo(-(11 + genome.speed * 2.5) * scale, side * (4 + genome.speed) * scale, -(14 + genome.speed * 3) * scale, side * 5 * scale);
-    context.stroke();
-  }
-
-  context.fillStyle = bodyColor;
-  context.beginPath();
-  context.ellipse(0, 0, bodyLength * scale, bodyHeight * scale, 0, 0, Math.PI * 2);
-  context.fill();
-
-  // Armor adds visible plates around the body.
-  context.shadowBlur = 0;
-  context.strokeStyle = '#f4ffd0';
-  context.globalAlpha = .28 + genome.armor * .08;
-  context.lineWidth = Math.max(1, genome.armor * .6) * scale;
-  for (let plate = 0; plate < genome.armor; plate++) {
-    const x = (-bodyLength * .55 + plate * bodyLength * 1.1 / Math.max(1, genome.armor - 1)) * scale;
-    context.beginPath();
-    context.moveTo(x, -bodyHeight * .75 * scale);
-    context.lineTo(x, bodyHeight * .75 * scale);
-    context.stroke();
-  }
-
-  // Sense grows a pair of antennae and one glowing tip per level.
-  context.globalAlpha = 1;
-  context.strokeStyle = bodyColor;
-  context.lineWidth = 1.2 * scale;
-  for (const side of [-1, 1]) {
-    context.beginPath();
-    context.moveTo(bodyLength * .65 * scale, side * bodyHeight * .45 * scale);
-    context.lineTo((bodyLength + 3 + genome.sense * 1.8) * scale, side * (bodyHeight + genome.sense) * scale);
-    context.stroke();
-  }
-  context.fillStyle = '#173c34';
-  for (let eye = 0; eye < genome.sense; eye++) {
-    context.beginPath();
-    context.arc((bodyLength * .45 + eye * .75) * scale, (-2 + eye * 1.1) * scale, 1.05 * scale, 0, Math.PI * 2);
-    context.fill();
-  }
-  context.restore();
-}
-
-function draw() {
-  const { width, height } = canvas;
-  const gradient = ctx.createRadialGradient(width * .5, height * .45, 20, width * .5, height * .45, width * .75);
-  gradient.addColorStop(0, '#174c40');
-  gradient.addColorStop(1, '#071d1c');
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, width, height);
-  ctx.lineWidth = 1;
-  for (let x = -40; x < width; x += 48) for (let y = -40; y < height; y += 42) {
-    ctx.strokeStyle = `rgba(94,160,128,${.035 + ((x + y) % 3) * .01})`;
-    ctx.beginPath();
-    ctx.arc(x + (y % 84 ? 24 : 0), y, 28, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-  for (const mote of world.motes) {
-    ctx.fillStyle = `rgba(183,233,154,${mote.a})`;
-    ctx.beginPath();
-    ctx.arc(mote.x, mote.y, mote.r, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  for (const hazard of world.hazards) {
-    const danger = ctx.createRadialGradient(hazard.x, hazard.y, 0, hazard.x, hazard.y, hazard.r);
-    danger.addColorStop(0, '#8e403055');
-    danger.addColorStop(1, '#251c1900');
-    ctx.fillStyle = danger;
-    ctx.beginPath();
-    ctx.arc(hazard.x, hazard.y, hazard.r, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  for (const food of world.food) {
-    const visible = Math.hypot(food.x - world.creatures[0].x, food.y - world.creatures[0].y) < world.genome.sense * 48;
-    ctx.fillStyle = visible ? '#d8ff6a' : '#68a778';
-    ctx.shadowColor = ctx.fillStyle;
-    ctx.shadowBlur = visible ? 10 : 2;
-    ctx.beginPath();
-    ctx.arc(food.x, food.y, food.size, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.shadowBlur = 0;
-  world.creatures.slice(1).forEach(creature => drawCreature(creature, world.genome));
-  drawCreature(world.creatures[0], world.genome, ctx, 1.35);
-  if (input.target) {
-    ctx.strokeStyle = `${world.genome.bodyColor}88`;
-    ctx.beginPath();
-    ctx.arc(input.target.x, input.target.y, 10 + Math.sin(world.time * 5) * 3, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-  drawPortrait();
-}
-
 function drawPortrait() {
+  const genome = world.genome;
+  const color = genome.bodyColor || '#c9ed62';
   portrait.clearRect(0, 0, 240, 150);
-  const gradient = portrait.createRadialGradient(120, 75, 2, 120, 75, 100);
+  const gradient = portrait.createRadialGradient(120, 75, 2, 120, 75, 110);
   gradient.addColorStop(0, '#286151');
   gradient.addColorStop(1, '#0b2623');
   portrait.fillStyle = gradient;
   portrait.fillRect(0, 0, 240, 150);
-  drawCreature({ x: 120, y: 72, angle: -.12 }, world.genome, portrait, 4);
+  portrait.save();
+  portrait.translate(120, 72);
+  portrait.shadowColor = color;
+  portrait.shadowBlur = 18;
+  portrait.fillStyle = color;
+  portrait.beginPath();
+  portrait.ellipse(0, 0, 25 + genome.speed * 3, 17 + genome.armor * 2, 0, 0, Math.PI * 2);
+  portrait.fill();
+  portrait.shadowBlur = 0;
+  portrait.strokeStyle = '#f4ffd099';
+  portrait.lineWidth = 1 + genome.armor;
+  for (let plate = 0; plate < genome.armor; plate++) {
+    const x = (plate - (genome.armor - 1) / 2) * 10;
+    portrait.beginPath();
+    portrait.moveTo(x, -13);
+    portrait.lineTo(x, 13);
+    portrait.stroke();
+  }
+  portrait.strokeStyle = color;
+  portrait.lineWidth = 3;
+  for (const side of [-1, 1]) {
+    portrait.beginPath();
+    portrait.moveTo(-25, side * 6);
+    portrait.quadraticCurveTo(-42 - genome.speed * 4, side * 16, -58 - genome.speed * 4, side * 12);
+    portrait.stroke();
+  }
+  portrait.fillStyle = '#173c34';
+  for (let eye = 0; eye < genome.sense; eye++) {
+    portrait.beginPath();
+    portrait.arc(18 + eye * 2, -7 + eye * 4, 3, 0, Math.PI * 2);
+    portrait.fill();
+  }
+  portrait.restore();
+}
+
+function draw() {
+  renderer.render(world);
+  drawPortrait();
 }
 
 function updateGoal() {
@@ -278,11 +212,7 @@ addEventListener('keyup', event => {
   if (event.code === 'Space') input.boost = false;
 });
 canvas.onclick = event => {
-  const rect = canvas.getBoundingClientRect();
-  input.target = {
-    x: (event.clientX - rect.left) * canvas.width / rect.width,
-    y: (event.clientY - rect.top) * canvas.height / rect.height,
-  };
+  input.target = renderer.screenToWorld(world, event.clientX, event.clientY);
 };
 
 applyInterfaceColor(localStorage.getItem('cororo-ui-color') || '#c9ed62', false);
